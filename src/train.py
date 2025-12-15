@@ -16,8 +16,8 @@ from evaluation import (
 )
 
 
-DATA_PATH = "/data/nhanes_diabetes_2007_2020_clean.csv"
-OUTPUT_DIR = "/outputs"
+DATA_PATH = "data/nhanes_diabetes_2007_2020_clean.csv"
+OUTPUT_DIR = "outputs"
 RANDOM_STATE = 42
 
 
