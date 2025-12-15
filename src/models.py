@@ -10,16 +10,18 @@ except ImportError:
 
 def get_models(random_state: int = 42):
     """
-    Returns a dictionary of models to train.
+    Returns all predictive models used in the project.
     """
     models = {}
 
+    # Logistic Regression (baseline)
     models["LogisticRegression"] = LogisticRegression(
         max_iter=2000,
         class_weight="balanced",
         solver="lbfgs"
     )
 
+    # Random Forest
     models["RandomForest"] = RandomForestClassifier(
         n_estimators=400,
         max_depth=None,
@@ -29,6 +31,7 @@ def get_models(random_state: int = 42):
         n_jobs=-1
     )
 
+    # Gradient Boosted Trees (XGBoost)
     if HAS_XGB:
         models["XGBoost"] = XGBClassifier(
             n_estimators=600,

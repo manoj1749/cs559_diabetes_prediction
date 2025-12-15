@@ -1,15 +1,22 @@
 import numpy as np
 import pandas as pd
 
+
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Perform feature engineering and recoding for NHANES diabetes dataset.
-    Returns a clean dataframe with engineered features.
+    Feature engineering for NHANES diabetes prediction.
+    Includes demographic, behavioral, dietary, and family history variables.
     """
-    
+
     df = df.copy()
     
-    
+    # -----------------------------
+    # REMOVE LEAKAGE VARIABLES & METADATA
+    # -----------------------------
+    leakage_cols = ["DID040"]
+    non_informative_cols = ["SEQN", "cycle"]
+    df = df.drop(columns=[c for c in leakage_cols + non_informative_cols if c in df.columns])
+
     # -----------------------------
     # Outcome variable
     # -----------------------------
@@ -20,8 +27,14 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     # -----------------------------
     # Demographics
     # -----------------------------
+    if "RIDAGEYR" in df.columns:
+        df["age"] = df["RIDAGEYR"]
+
     if "RIAGENDR" in df.columns:
         df["female"] = df["RIAGENDR"].map({1: 0, 2: 1})
+
+    if "BMXBMI" in df.columns:
+        df["bmi"] = df["BMXBMI"]
 
     # -----------------------------
     # Family history
@@ -52,11 +65,11 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         df["sugar_density"] = (df["DR1TSUGR"] / kcal) * 1000
 
     # -----------------------------
-    # Drop raw columns not needed for modeling
+    # Drop raw NHANES columns
     # -----------------------------
     drop_cols = [
-        "DIQ010", "RIAGENDR", "MCQ300C",
-        "SMQ020", "PAQ650"
+        "DIQ010", "RIDAGEYR", "RIAGENDR", "BMXBMI",
+        "MCQ300C", "SMQ020", "PAQ650"
     ]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
