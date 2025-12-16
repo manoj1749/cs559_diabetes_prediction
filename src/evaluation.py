@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import (
@@ -9,7 +8,9 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
     roc_curve,
-    brier_score_loss
+    brier_score_loss,
+    confusion_matrix,
+    ConfusionMatrixDisplay
 )
 from sklearn.calibration import calibration_curve
 
@@ -24,6 +25,21 @@ def evaluate_model(y_true, y_prob, threshold=0.5):
         "roc_auc": roc_auc_score(y_true, y_prob),
         "brier": brier_score_loss(y_true, y_prob),
     }
+
+
+def plot_confusion_matrix(y_true, y_prob, model_name, save_path, threshold=0.5):
+    y_pred = (y_prob >= threshold).astype(int)
+    cm = confusion_matrix(y_true, y_pred)
+
+    disp = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=["No Diabetes", "Diabetes"]
+    )
+    disp.plot(cmap="Blues", values_format="d")
+    plt.title(f"Confusion Matrix: {model_name}")
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
 
 
 def plot_roc_curve(prob_dict, y_true, save_path):
@@ -70,11 +86,7 @@ def decision_curve(y_true, y_prob, thresholds):
         tp = np.sum((preds == 1) & (y_true == 1))
         fp = np.sum((preds == 1) & (y_true == 0))
 
-        if t == 1:
-            net_benefit = 0
-        else:
-            net_benefit = (tp / N) - (fp / N) * (t / (1 - t))
-
+        net_benefit = (tp / N) - (fp / N) * (t / (1 - t))
         net_benefits.append(net_benefit)
 
     return net_benefits
@@ -90,6 +102,7 @@ def plot_decision_curve(prob_dict, y_true, save_path):
 
     prevalence = np.mean(y_true)
     treat_all = prevalence - (1 - prevalence) * (thresholds / (1 - thresholds))
+
     plt.plot(thresholds, treat_all, linestyle="--", label="Treat All")
     plt.plot(thresholds, np.zeros_like(thresholds), linestyle="--", label="Treat None")
 

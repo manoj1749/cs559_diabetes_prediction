@@ -24,7 +24,6 @@ def get_models(random_state: int = 42):
     # Random Forest
     models["RandomForest"] = RandomForestClassifier(
         n_estimators=400,
-        max_depth=None,
         min_samples_leaf=2,
         class_weight="balanced_subsample",
         random_state=random_state,

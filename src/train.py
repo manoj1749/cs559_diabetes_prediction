@@ -1,6 +1,8 @@
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
+import shap
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -17,7 +19,8 @@ from evaluation import (
     evaluate_model,
     plot_roc_curve,
     plot_calibration_curve,
-    plot_decision_curve
+    plot_decision_curve,
+    plot_confusion_matrix
 )
 
 DATA_PATH = "data/nhanes_diabetes_2007_2020_clean.csv"
@@ -43,6 +46,7 @@ def build_preprocessor(X):
         ("num", numeric_pipeline, numeric_cols),
         ("cat", categorical_pipeline, categorical_cols)
     ])
+
 
 def train_neural_network(X_train, y_train, X_val, y_val, input_dim):
     model = models.Sequential([
@@ -78,6 +82,7 @@ def train_neural_network(X_train, y_train, X_val, y_val, input_dim):
 
     return model
 
+
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -107,12 +112,12 @@ def main():
         random_state=RANDOM_STATE
     )
 
-    models = get_models(RANDOM_STATE)
+    models_dict = get_models(RANDOM_STATE)
 
     metrics_list = []
     prob_outputs = {}
 
-    for name, model in models.items():
+    for name, model in models_dict.items():
         pipe = Pipeline([
             ("preprocessor", preprocessor),
             ("model", model)
@@ -120,6 +125,11 @@ def main():
 
         pipe.fit(X_train, y_train)
         probs = pipe.predict_proba(X_test)[:, 1]
+
+        plot_confusion_matrix(
+            y_test, probs, name,
+            f"{OUTPUT_DIR}/confusion_matrix_{name}.png"
+        )
 
         metrics = evaluate_model(y_test, probs)
         metrics["model"] = name
@@ -130,13 +140,17 @@ def main():
     # Train & evaluate Neural Network
     # -----------------------------
     nn_model = train_neural_network(
-        X_tr, y_tr,
-        X_val, y_val,
+        X_tr, y_tr, X_val, y_val,
         input_dim=X_train_nn.shape[1]
     )
 
     nn_probs = nn_model.predict(X_test_nn).ravel()
     nn_probs = np.clip(nn_probs, 1e-6, 1 - 1e-6)
+
+    plot_confusion_matrix(
+        y_test, nn_probs, "NeuralNetwork",
+        f"{OUTPUT_DIR}/confusion_matrix_NeuralNetwork.png"
+    )
 
     nn_metrics = evaluate_model(y_test, nn_probs)
     nn_metrics["model"] = "NeuralNetwork"
@@ -144,6 +158,28 @@ def main():
     metrics_list.append(nn_metrics)
     prob_outputs["NeuralNetwork"] = nn_probs
 
+    # SHAP for XGBoost
+    if "XGBoost" in models_dict:
+        xgb_pipe = Pipeline([
+            ("preprocessor", preprocessor),
+            ("model", models_dict["XGBoost"])
+        ])
+        xgb_pipe.fit(X_train, y_train)
+
+        X_train_trans = preprocessor.transform(X_train)
+        feature_names = preprocessor.get_feature_names_out()
+
+        explainer = shap.TreeExplainer(xgb_pipe.named_steps["model"])
+        shap_values = explainer.shap_values(X_train_trans)
+
+        shap.summary_plot(
+            shap_values,
+            X_train_trans,
+            feature_names=feature_names,
+            show=False
+        )
+        plt.savefig(f"{OUTPUT_DIR}/shap_summary_xgboost.png")
+        plt.close()
 
     results_df = pd.DataFrame(metrics_list).sort_values("roc_auc", ascending=False)
     results_df.to_csv(f"{OUTPUT_DIR}/model_results.csv", index=False)
