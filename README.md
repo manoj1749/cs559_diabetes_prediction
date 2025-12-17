@@ -79,16 +79,16 @@ All models provided positive net benefit over *treat-all* and *treat-none* strat
 
 ### Confusion Matrices
 
-**Logistic Regression**
+**Logistic Regression** <br>
 ![Confusion Matrix – Logistic Regression](outputs/confusion_matrix_LogisticRegression.png)
 
-**Random Forest**
+**Random Forest** <br>
 ![Confusion Matrix – Random Forest](outputs/confusion_matrix_RandomForest.png)
 
-**XGBoost**
+**XGBoost** <br>
 ![Confusion Matrix – XGBoost](outputs/confusion_matrix_XGBoost.png)
 
-**Neural Network**
+**Neural Network** <br>
 ![Confusion Matrix – Neural Network](outputs/confusion_matrix_NeuralNetwork.png)
 
 ---
